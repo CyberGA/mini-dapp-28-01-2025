@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState, useRef } from "react";
+import "./App.css";
 import abi from "./abi.json";
 import { ethers } from "ethers";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const CONTRACTADDRESS = "0xf504e300cd852B5994d1C0a921438C76417e392C"
+const CONTRACTADDRESS = "0xf504e300cd852B5994d1C0a921438C76417e392C";
 
 function App() {
-  const [balance, setBalance] = useState(0)
-  const [depositAmount, setDepositAmount] = useState(0)
-  const [withdrawAmount, setWithdrawAmount] = useState(0)
+  const [balance, setBalance] = useState(0);
+  const [depositAmount, setDepositAmount] = useState();
+  const [withdrawAmount, setWithdrawAmount] = useState();
+  const depositToastId = useRef();
+  const withdrawToastId = useRef();
 
-   async function requestAccounts() {
+  async function requestAccounts() {
     await window.ethereum.request({ method: "eth_requestAccounts" });
   }
   async function deposit() {
@@ -21,16 +25,20 @@ function App() {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, signer);
       try {
+        depositToastId.current = toast.loading("Processing deposit...");
         const tx = await contract.deposit(depositAmount);
         const receipt = tx.wait();
         console.log("  Transaction successful", receipt);
-        getBalance();
       } catch (error) {
         console.log("fail  transaction", error);
       }
     }
   }
   async function withdraw() {
+    if (balance < withdrawAmount) {
+      toast.error("Insufficient balance");
+      return;
+    }
     if (typeof window.ethereum !== "undefined") {
       await requestAccounts();
 
@@ -38,15 +46,16 @@ function App() {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, signer);
       try {
-        const tx = await contract.deposit(depositAmount);
+        withdrawToastId.current = toast.loading("Processing withdrawal...");
+        const tx = await contract.withdraw(withdrawAmount);
         const receipt = tx.wait();
-        console.log("  Transaction successful", receipt);
-        getBalance();
+        console.log("Transaction successful", receipt);
       } catch (error) {
         console.log("fail  transaction", error);
       }
     }
   }
+
   async function getBalance() {
     if (typeof window.ethereum !== "undefined") {
       await requestAccounts();
@@ -56,8 +65,8 @@ function App() {
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, provider);
       try {
         const tx = await contract.getBalance();
-        setBalance(tx);
-        console.log("  Transaction successful", tx);
+        console.log("Transaction successful", tx.toString());
+        setBalance(tx.toString());
       } catch (error) {
         console.log("fail  transaction", error);
       }
@@ -65,8 +74,41 @@ function App() {
   }
 
   useEffect(() => {
-    getBalance()
-  }, [])
+    getBalance();
+
+    if (typeof window.ethereum !== "undefined") {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACTADDRESS, abi, provider);
+
+      contract.on("Deposit", (data) => {
+        const value = Number.parseFloat(data.toString());
+        setBalance((prevBalance) => Number.parseFloat(prevBalance) + value);
+        toast.update(depositToastId.current, {
+          render: `Deposit received: ${value} ETH`,
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+        setWithdrawAmount("");
+      });
+      contract.on("Withdraw", (data) => {
+        const value = Number.parseFloat(data.toString());
+        setBalance((prevBalance) => Number.parseFloat(prevBalance) - value);
+        toast.update(withdrawToastId.current, {
+          render: `Withdrawal made: ${value} ETH`,
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+        setWithdrawAmount("");
+      });
+
+      return () => {
+        contract.removeAllListeners("Deposit");
+        contract.removeAllListeners("Withdraw");
+      };
+    }
+  }, []);
 
   return (
     <main>
@@ -79,17 +121,26 @@ function App() {
           </p>
         </div>
         <div className="transaction_action">
-          <input value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} />
+          <input
+            value={depositAmount}
+            placeholder="0"
+            onChange={(e) => setDepositAmount(e.target.value)}
+          />
           <button onClick={deposit}>Deposit</button>
           <br />
           <br />
           <br />
-          <input value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+          <input
+            value={withdrawAmount}
+            placeholder="0"
+            onChange={(e) => setWithdrawAmount(e.target.value)}
+          />
           <button onClick={withdraw}>Withdraw</button>
         </div>
       </div>
+      <ToastContainer />
     </main>
   );
 }
 
-export default App
+export default App;
