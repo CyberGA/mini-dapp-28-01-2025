@@ -1,0 +1,60 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.transaction__wrapper {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+.transaction__wrapper .balance .balance__header {
+  font-size: 40px;
+  font-weight: 600;
+}
+.transaction__wrapper .balance .balance__value {
+  font-size: 28px;
+}
+.transaction__wrapper .balance .balance__value span {
+  font-size: 12px;
+}
+.transaction__wrapper input {
+  height: 48px;
+  padding-inline: 8px;
+}
+.transaction__wrapper button {
+  height: 56px;
+  padding-inline: 8px;
+  margin-left: 4px;
+}
