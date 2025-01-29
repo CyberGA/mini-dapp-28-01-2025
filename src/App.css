@@ -1,8 +1,9 @@
 #root {
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 0;
   padding: 2rem;
   text-align: center;
+  width: 100%;
 }
 
 .logo {
@@ -38,23 +39,41 @@
   display: flex;
   align-items: center;
   gap: 60px;
+  margin: 0 auto;
+  width: fit-content;
 }
 .transaction__wrapper .balance .balance__header {
   font-size: 40px;
   font-weight: 600;
+  margin: 0;
 }
 .transaction__wrapper .balance .balance__value {
   font-size: 28px;
+  margin: 0;
 }
 .transaction__wrapper .balance .balance__value span {
   font-size: 12px;
 }
-.transaction__wrapper input {
+
+.transaction__wrapper .transaction_action {
+  padding: 40px 20px;
+ /* border: 1px solid #ffc; */
+  border-radius: 12px;
+  box-shadow: 0px 0px 30px 0px #000;
+  width: 300px;
+}
+.transaction__wrapper .transaction_action input {
+  height: 48px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  border: 0;
+  width: calc(100% - 24px);
+  display: inline-block;
+}
+.transaction__wrapper .transaction_action button {
   height: 48px;
   padding-inline: 8px;
-}
-.transaction__wrapper button {
-  height: 56px;
-  padding-inline: 8px;
-  margin-left: 4px;
+  display: block;
+  width: 100%;
+  margin-top: 20px;
 }

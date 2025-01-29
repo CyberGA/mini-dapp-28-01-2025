@@ -8,9 +8,9 @@ import "react-toastify/dist/ReactToastify.css";
 const CONTRACTADDRESS = "0xf504e300cd852B5994d1C0a921438C76417e392C";
 
 function App() {
-  const [balance, setBalance] = useState(0);
-  const [depositAmount, setDepositAmount] = useState();
-  const [withdrawAmount, setWithdrawAmount] = useState();
+  const [balance, setBalance] = useState(null);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const depositToastId = useRef();
   const withdrawToastId = useRef();
 
@@ -18,6 +18,10 @@ function App() {
     await window.ethereum.request({ method: "eth_requestAccounts" });
   }
   async function deposit() {
+    if (depositAmount === "") {
+      toast.error("Please enter a valid amount");
+      return;
+    }
     if (typeof window.ethereum !== "undefined") {
       await requestAccounts();
 
@@ -26,16 +30,26 @@ function App() {
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, signer);
       try {
         depositToastId.current = toast.loading("Processing deposit...");
-        const tx = await contract.deposit(depositAmount);
-        const receipt = tx.wait();
-        console.log("  Transaction successful", receipt);
+        const tx = await contract.deposit(Number.parseFloat(depositAmount));
+        tx.wait();
       } catch (error) {
         console.log("fail  transaction", error);
+        toast.update(depositToastId.current, {
+          render: `Error: ${error.reason}`,
+          type: "error",
+          isLoading: false,
+          autoClose: 2000,
+        });
       }
     }
   }
   async function withdraw() {
-    if (balance < withdrawAmount) {
+    if (withdrawAmount === "") {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    const withdrawalValue = Number.parseFloat(withdrawAmount);
+    if (Number.parseFloat(balance) < withdrawalValue) {
       toast.error("Insufficient balance");
       return;
     }
@@ -47,14 +61,28 @@ function App() {
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, signer);
       try {
         withdrawToastId.current = toast.loading("Processing withdrawal...");
-        const tx = await contract.withdraw(withdrawAmount);
-        const receipt = tx.wait();
-        console.log("Transaction successful", receipt);
+        const tx = await contract.withdraw(withdrawalValue);
+        tx.wait();
       } catch (error) {
         console.log("fail  transaction", error);
+        toast.update(withdrawToastId.current, {
+          render: `Error: ${error.reason}`,
+          type: "error",
+          isLoading: false,
+          autoClose: 2000,
+        });
       }
     }
   }
+
+  const isValidateInput = (e) => {
+    const value = e.target.value;
+    const regex = /^[0-9]*\.?[0-9]*$/;
+    if (value === "." || !regex.test(value)) {
+      return false;
+    }
+    return true;
+  };
 
   async function getBalance() {
     if (typeof window.ethereum !== "undefined") {
@@ -65,8 +93,7 @@ function App() {
       const contract = new ethers.Contract(CONTRACTADDRESS, abi, provider);
       try {
         const tx = await contract.getBalance();
-        console.log("Transaction successful", tx.toString());
-        setBalance(tx.toString());
+        setBalance(Number.parseFloat(tx.toString()));
       } catch (error) {
         console.log("fail  transaction", error);
       }
@@ -87,9 +114,9 @@ function App() {
           render: `Deposit received: ${value} ETH`,
           type: "success",
           isLoading: false,
-          autoClose: 5000,
+          autoClose: 2000,
         });
-        setWithdrawAmount("");
+        setDepositAmount("");
       });
       contract.on("Withdraw", (data) => {
         const value = Number.parseFloat(data.toString());
@@ -98,7 +125,7 @@ function App() {
           render: `Withdrawal made: ${value} ETH`,
           type: "success",
           isLoading: false,
-          autoClose: 5000,
+          autoClose: 2000,
         });
         setWithdrawAmount("");
       });
@@ -117,23 +144,31 @@ function App() {
           <h2 className="balance__header">Balance</h2>
           <p className="balance__value">
             {balance}
-            <span>ETH</span>
+            {balance && <span>ETH</span>}
           </p>
         </div>
         <div className="transaction_action">
           <input
             value={depositAmount}
             placeholder="0"
-            onChange={(e) => setDepositAmount(e.target.value)}
+            onChange={(e) => {
+              if (isValidateInput(e)) {
+                setDepositAmount(e.target.value);
+              }
+            }}
           />
           <button onClick={deposit}>Deposit</button>
           <br />
-          <br />
+          <hr />
           <br />
           <input
             value={withdrawAmount}
             placeholder="0"
-            onChange={(e) => setWithdrawAmount(e.target.value)}
+            onChange={(e) => {
+              if (isValidateInput(e)) {
+                setWithdrawAmount(e.target.value);
+              }
+            }}
           />
           <button onClick={withdraw}>Withdraw</button>
         </div>
